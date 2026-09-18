@@ -125,6 +125,66 @@ TEST(FindEvenFlops, AgreesWithTheStandaloneEquityCalculation) {
   }
 }
 
+TEST(Preflop, AggregatedCountsCoverEveryBoardTenTimes) {
+  const auto report = findEvenFlops(hand("AhKs"), hand("QdQc"), {.topCount = 1});
+
+  ASSERT_TRUE(report.has_value()) << report.error();
+  EXPECT_EQ(report->preflop.runouts(), TOTAL_RUNOUTS);
+  EXPECT_EQ(report->preflop.runouts(), TOTAL_FLOPS * 990);
+}
+
+TEST(Preflop, MatchesADirectEnumerationOfEveryFiveCardBoard) {
+  // Independently enumerate all C(48,5) boards. If this disagrees with the
+  // aggregated flop counts then the "each board appears 10 times" assumption
+  // behind the free preflop number is wrong.
+  const Hand hero = hand("AhKs");
+  const Hand villain = hand("QdQc");
+  const auto report = findEvenFlops(hero, villain, {.topCount = 1});
+  ASSERT_TRUE(report.has_value()) << report.error();
+
+  const std::vector<Card> live = remainingCards(hero, villain);
+  Equity direct;
+  const std::size_t n = live.size();
+  for (std::size_t a = 0; a < n; ++a) {
+    for (std::size_t b = a + 1; b < n; ++b) {
+      for (std::size_t c = b + 1; c < n; ++c) {
+        const Flop board{live[a], live[b], live[c]};
+        for (std::size_t d = c + 1; d < n; ++d) {
+          for (std::size_t e = d + 1; e < n; ++e) {
+            const Equity one = flopEquity(hero, villain, board,
+                                          std::array<Card, 2>{live[d], live[e]});
+            direct.wins += one.wins;
+            direct.losses += one.losses;
+            direct.ties += one.ties;
+          }
+        }
+      }
+    }
+  }
+
+  ASSERT_EQ(direct.runouts(), TOTAL_BOARDS);
+  EXPECT_NEAR(direct.hero(), report->preflop.hero(), 1e-12);
+}
+
+TEST(Preflop, IsUnaffectedByTheNumberOfResultsRequested) {
+  const auto few = findEvenFlops(hand("AhKs"), hand("QdQc"), {.topCount = 1});
+  const auto many = findEvenFlops(hand("AhKs"), hand("QdQc"), {.topCount = 50});
+
+  ASSERT_TRUE(few.has_value()) << few.error();
+  ASSERT_TRUE(many.has_value()) << many.error();
+  EXPECT_EQ(few->preflop.wins, many->preflop.wins);
+  EXPECT_EQ(few->preflop.ties, many->preflop.ties);
+}
+
+TEST(Preflop, PutsBigPairAheadOfTwoOvercards) {
+  // AKo vs QQ is a well-known roughly 43/57 race.
+  const auto report = findEvenFlops(hand("AhKs"), hand("QdQc"), {.topCount = 1});
+
+  ASSERT_TRUE(report.has_value()) << report.error();
+  EXPECT_GT(report->preflop.hero(), 0.42);
+  EXPECT_LT(report->preflop.hero(), 0.44);
+}
+
 TEST(FindEvenFlops, RejectsHandsThatShareACard) {
   const auto report = findEvenFlops(hand("AhKs"), hand("AhQc"), {.topCount = 5});
 

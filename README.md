@@ -6,7 +6,10 @@ to 50/50.
 ```
 $ even-flop AhKs QdQc --top 5
 AhKs vs QdQc
-17296 flops evaluated in 34 ms
+17296 flops evaluated in 48 ms
+
+Preflop            42.84%    57.16%   (7.16% off even)
+Most even flop     50.20%    49.80%   (0.20% off even, on 8h 9h Jh)
 
   #  Flop            AhKs      QdQc      Off
 ---  ----------  --------  --------  -------
@@ -16,6 +19,12 @@ AhKs vs QdQc
   4  8s 9s Ts      50.66%    49.34%    0.66%
   5  7s 9s Js      50.86%    49.14%    0.86%
 ```
+
+The `Preflop` line is where the matchup starts and `Most even flop` is the
+closest a flop can bring it, so you can see both the size of the gap and how
+much of it a flop can close. Some matchups cannot get close at all -- `2c2d` vs
+`3c3d` starts at 18.89% and the best any flop manages is 65.25%, overshooting
+past even, because the deuces have to flop a set to compete.
 
 ## How it works
 
@@ -27,7 +36,13 @@ in the answer:
 - That is ~17.1M runouts and ~34M seven-card evaluations per matchup.
 
 Every runout is scored for both players; a chop counts as half a win each, so the
-two equities always sum to 100%. Flops are ranked by `|hero equity - 50%|`, with
+two equities always sum to 100%.
+
+Preflop equity comes out of the same enumeration for free. Each of the `C(48,5)`
+= 1,712,304 five-card boards is reachable through exactly `C(5,3)` = 10 distinct
+flop/runout splits, and equally so, so summing the per-flop win/loss/tie counts
+is an exact preflop equity rather than an estimate. A test cross-checks it
+against a direct enumeration of all five-card boards. Flops are ranked by `|hero equity - 50%|`, with
 ties broken by card order so runs are byte-for-byte reproducible.
 
 Hand evaluation uses [PokerHandEvaluator](https://github.com/HenryRLee/PokerHandEvaluator)

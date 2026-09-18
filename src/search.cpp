@@ -111,7 +111,18 @@ std::expected<SearchReport, std::string> findEvenFlops(
   std::partial_sort(results.begin(), results.begin() + static_cast<std::ptrdiff_t>(topCount),
                     results.end(), isCloserToEven);
 
+  // Every five-card board is reachable through C(5,3)=10 distinct (flop,
+  // turn/river) splits, and equally so, which makes these totals an exact
+  // preflop equity rather than an approximation of one.
+  Equity preflop;
+  for (const Equity& equity : equities) {
+    preflop.wins += equity.wins;
+    preflop.losses += equity.losses;
+    preflop.ties += equity.ties;
+  }
+
   SearchReport report;
+  report.preflop = preflop;
   report.flopsEvaluated = static_cast<int>(results.size());
   report.top.assign(results.begin(), results.begin() + static_cast<std::ptrdiff_t>(topCount));
   return report;
