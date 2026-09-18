@@ -30,6 +30,12 @@ struct SearchReport {
   std::vector<FlopResult> top;
 };
 
+// How many workers a requested thread count actually becomes. Zero or negative
+// means "one per core". Requests above the core count are clamped down: extra
+// threads cannot help a CPU-bound enumeration, and a very large request would
+// otherwise shrink each chunk to a single flop and start a thread for each one.
+int resolveWorkerCount(int requested);
+
 std::expected<SearchReport, std::string> findEvenFlops(
     const Hand& hero, const Hand& villain, const SearchOptions& options);
 

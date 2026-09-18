@@ -37,11 +37,7 @@ std::vector<Flop> buildFlops(std::span<const Card> live) {
   return flops;
 }
 
-int resolveThreadCount(int requested) {
-  if (requested > 0) return requested;
-  const unsigned int detected = std::thread::hardware_concurrency();
-  return detected == 0 ? 1 : static_cast<int>(detected);
-}
+
 
 // Closest to even first. Flops that tie on equity fall back to card order, which
 // makes the ranking total and therefore identical on every run and thread count.
@@ -53,6 +49,13 @@ bool isCloserToEven(const FlopResult& lhs, const FlopResult& rhs) {
 }
 
 }  // namespace
+
+int resolveWorkerCount(int requested) {
+  const unsigned int detected = std::thread::hardware_concurrency();
+  const int available = detected == 0 ? 1 : static_cast<int>(detected);
+  if (requested <= 0) return available;
+  return std::min(requested, available);
+}
 
 std::expected<SearchReport, std::string> findEvenFlops(
     const Hand& hero, const Hand& villain, const SearchOptions& options) {
@@ -86,7 +89,8 @@ std::expected<SearchReport, std::string> findEvenFlops(
     }
   };
 
-  const auto threadCount = static_cast<std::size_t>(resolveThreadCount(options.threadCount));
+  const auto workers = static_cast<std::size_t>(resolveWorkerCount(options.threadCount));
+  const std::size_t threadCount = std::max<std::size_t>(1, std::min(workers, flops.size()));
   const std::size_t chunkSize = (flops.size() + threadCount - 1) / threadCount;
   {
     std::vector<std::jthread> workers;

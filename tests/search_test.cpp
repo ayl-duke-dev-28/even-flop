@@ -74,6 +74,41 @@ TEST(FindEvenFlops, ProducesIdenticalResultsRegardlessOfThreadCount) {
   }
 }
 
+TEST(ResolveWorkerCount, ClampsHugeRequestsToTheCoreCount) {
+  // Without this clamp a big --threads value shrinks each chunk to one flop and
+  // starts ~17k threads, which is 250x slower than the correct answer.
+  const int cores = resolveWorkerCount(0);
+
+  EXPECT_GE(cores, 1);
+  EXPECT_EQ(resolveWorkerCount(1'000'000), cores);
+  EXPECT_EQ(resolveWorkerCount(TOTAL_FLOPS), cores);
+}
+
+TEST(ResolveWorkerCount, TreatsZeroAndNegativeAsOnePerCore) {
+  const int cores = resolveWorkerCount(0);
+
+  EXPECT_EQ(resolveWorkerCount(-5), cores);
+  EXPECT_EQ(resolveWorkerCount(0), cores);
+}
+
+TEST(ResolveWorkerCount, HonoursRequestsBelowTheCoreCount) {
+  EXPECT_EQ(resolveWorkerCount(1), 1);
+}
+
+TEST(FindEvenFlops, SurvivesAnAbsurdThreadRequest) {
+  const auto baseline = findEvenFlops(hand("AhKs"), hand("QdQc"), {.topCount = 3, .threadCount = 1});
+  const auto absurd =
+      findEvenFlops(hand("AhKs"), hand("QdQc"), {.topCount = 3, .threadCount = 1'000'000});
+
+  ASSERT_TRUE(absurd.has_value()) << absurd.error();
+  ASSERT_TRUE(baseline.has_value()) << baseline.error();
+  EXPECT_EQ(absurd->flopsEvaluated, TOTAL_FLOPS);
+  ASSERT_EQ(absurd->top.size(), baseline->top.size());
+  for (std::size_t i = 0; i < absurd->top.size(); ++i) {
+    EXPECT_EQ(toString(absurd->top[i].flop), toString(baseline->top[i].flop)) << "at " << i;
+  }
+}
+
 TEST(FindEvenFlops, AgreesWithTheStandaloneEquityCalculation) {
   // The threaded search and the simple one-shot path must not drift apart.
   const Hand hero = hand("AhKs");
