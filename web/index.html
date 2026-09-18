@@ -87,19 +87,19 @@
     max-width: 62rem;
     margin: 0 auto;
     padding-inline: 20px;
-    padding-block: 2.5rem 4rem;
+    padding-block: 1.75rem 3rem;
     display: flex;
     flex-direction: column;
-    gap: 2.25rem;
+    gap: 1.5rem;
   }
 
   /* ---------- masthead ---------- */
-  .masthead { display: flex; flex-direction: column; gap: 0.5rem; }
+  .masthead { display: flex; flex-direction: column; gap: 0.35rem; }
 
   .wordmark {
     font-family: var(--serif);
     font-weight: 600;
-    font-size: var(--step-4);
+    font-size: var(--step-3);
     line-height: 1;
     letter-spacing: -0.02em;
     margin: 0;
@@ -109,8 +109,8 @@
   .standfirst {
     margin: 0;
     color: var(--muted);
-    max-width: 46ch;
-    font-size: var(--step-1);
+    max-width: 62ch;
+    font-size: var(--step-0);
   }
 
   .eyebrow {
@@ -126,10 +126,32 @@
     background: var(--surface);
     border: 1px solid var(--rule);
     border-radius: 3px;
-    padding: 1.25rem;
+    padding: 1rem 1.25rem;
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: 0.9rem;
+  }
+
+  /* Wide enough for two columns: put the deck beside the hands and controls
+     rather than under them, so the readout above stays on screen while you
+     pick. DOM order is unchanged, so narrow screens just stack. */
+  @media (min-width: 880px) {
+    .panel {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      grid-template-areas:
+        "matchup picker"
+        "controls picker"
+        "status picker";
+      gap: 0.9rem 1.75rem;
+      align-items: start;
+    }
+    .matchup { grid-area: matchup; }
+    .picker-scroll { grid-area: picker; }
+    .controls { grid-area: controls; align-content: start; }
+    .status { grid-area: status; }
+    .picker { width: 28rem; }
+    .controls { justify-content: flex-start; gap: 0.6rem 1rem; }
   }
 
   /* ---------- hand builder ---------- */
@@ -140,7 +162,7 @@
     gap: 1rem;
   }
 
-  .seat { display: flex; flex-direction: column; gap: 0.5rem; align-items: center; }
+  .seat { display: flex; flex-direction: column; gap: 0.35rem; align-items: center; }
 
   .seat-label {
     font-size: var(--step--1);
@@ -184,9 +206,9 @@
   .card.c { color: var(--suit-c); }
 
   .slot {
-    width: 3.25rem;
-    height: 4.5rem;
-    font-size: var(--step-2);
+    width: 2.5rem;
+    height: 3.5rem;
+    font-size: var(--step-1);
     gap: 0.15rem;
     cursor: pointer;
     transition: border-color 0.12s ease;
@@ -307,7 +329,7 @@
   .status.error { color: var(--suit-h); }
 
   /* ---------- the axis ---------- */
-  .readout { display: flex; flex-direction: column; gap: 1.25rem; }
+  .readout { display: flex; flex-direction: column; gap: 0.9rem; }
 
   .axis-head { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; flex-wrap: wrap; }
 
@@ -315,7 +337,7 @@
 
   .axis {
     position: relative;
-    height: 5.5rem;
+    height: 5rem;
     border-top: 1px solid var(--rule);
     border-bottom: 1px solid var(--rule);
     background: var(--surface-sunk);
@@ -376,7 +398,7 @@
     grid-template-columns: 7.5rem 1fr auto;
     gap: 1rem;
     align-items: center;
-    padding-block: 0.7rem;
+    padding-block: 0.5rem;
     border-bottom: 1px solid var(--rule);
   }
 
@@ -398,6 +420,7 @@
     align-items: center;
     flex-wrap: wrap;
     gap: 0.35rem;
+    min-height: 2.35rem;
   }
 
   .summary-figure .split { color: var(--faint); }
@@ -498,6 +521,35 @@
     </p>
   </header>
 
+  <section class="readout" aria-label="Results">
+    <div class="axis-head">
+      <h2 class="axis-title">Where the matchup sits</h2>
+      <span class="eyebrow" id="axis-meta"></span>
+    </div>
+
+    <div class="axis" id="axis">
+      <div class="tick" style="left:25%"></div>
+      <div class="tick" style="left:75%"></div>
+      <div class="centerline"></div>
+      <div class="marker preflop" id="marker-preflop" hidden>
+        <span class="marker-label"></span>
+        <span class="marker-stem"></span>
+        <span class="marker-dot"></span>
+      </div>
+      <div class="marker best" id="marker-best" hidden>
+        <span class="marker-label"></span>
+        <span class="marker-stem"></span>
+        <span class="marker-dot"></span>
+      </div>
+    </div>
+    <div class="axis-ends">
+      <span id="end-b">Hand B always wins</span>
+      <span id="end-a">Hand A always wins</span>
+    </div>
+
+    <div class="summary" id="summary"></div>
+  </section>
+
   <section class="panel" aria-label="Choose two hands">
     <div class="matchup">
       <div class="seat">
@@ -531,35 +583,6 @@
     </div>
 
     <p class="status" id="status" role="status" aria-live="polite">Loading engine...</p>
-  </section>
-
-  <section class="readout" aria-label="Results">
-    <div class="axis-head">
-      <h2 class="axis-title">Where the matchup sits</h2>
-      <span class="eyebrow" id="axis-meta"></span>
-    </div>
-
-    <div class="axis" id="axis">
-      <div class="tick" style="left:25%"></div>
-      <div class="tick" style="left:75%"></div>
-      <div class="centerline"></div>
-      <div class="marker preflop" id="marker-preflop" hidden>
-        <span class="marker-label"></span>
-        <span class="marker-stem"></span>
-        <span class="marker-dot"></span>
-      </div>
-      <div class="marker best" id="marker-best" hidden>
-        <span class="marker-label"></span>
-        <span class="marker-stem"></span>
-        <span class="marker-dot"></span>
-      </div>
-    </div>
-    <div class="axis-ends">
-      <span id="end-b">Hand B always wins</span>
-      <span id="end-a">Hand A always wins</span>
-    </div>
-
-    <div class="summary" id="summary"></div>
   </section>
 
   <section aria-label="Closest flops">
@@ -612,6 +635,7 @@
     // Floor for the per-row bar scale, so a set of near-perfect flops does not
     // get magnified into looking wildly uneven.
     var MIN_BAR_SCALE = 0.01;
+    var PLACEHOLDER = "--.--%";
 
     var PRESETS = [
       { label: "AK vs QQ", cards: ["Ah", "Ks", "Qd", "Qc"] },
@@ -893,10 +917,15 @@
       setStatus("Pick " + need + " more card" + (need === 1 ? "" : "s") + " to run the search.");
       els.markerPreflop.hidden = true;
       els.markerBest.hidden = true;
-      els.summary.textContent = "";
-      els.results.textContent = "";
       els.axisMeta.textContent = "";
       els.devHeading.textContent = "Deviation from even";
+      els.endA.textContent = "Hand A always wins";
+      els.endB.textContent = "Hand B always wins";
+      els.results.textContent = "";
+
+      els.summary.textContent = "";
+      els.summary.appendChild(summaryRow("Preflop", PLACEHOLDER, PLACEHOLDER, "", false, null));
+      els.summary.appendChild(summaryRow("Closest flop", PLACEHOLDER, PLACEHOLDER, "", true, null));
     }
 
     // ---------- running ----------
