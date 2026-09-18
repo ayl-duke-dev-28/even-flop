@@ -51,6 +51,21 @@ TEST(FormatTable, HandlesAnEmptyResultList) {
   EXPECT_NE(text.find("17296"), std::string::npos);
 }
 
+TEST(EscapeJsonString, LeavesOrdinaryTextAlone) {
+  EXPECT_EQ(escapeJsonString("AhKs"), "AhKs");
+}
+
+TEST(EscapeJsonString, EscapesQuotesAndBackslashes) {
+  EXPECT_EQ(escapeJsonString("Card \"Xs\" is bad"), "Card \\\"Xs\\\" is bad");
+  EXPECT_EQ(escapeJsonString("a\\b"), "a\\\\b");
+}
+
+TEST(EscapeJsonString, EscapesControlCharacters) {
+  EXPECT_EQ(escapeJsonString("a\nb"), "a\\nb");
+  EXPECT_EQ(escapeJsonString("a\tb"), "a\\tb");
+  EXPECT_EQ(escapeJsonString(std::string(1, '\x01')), "\\u0001");
+}
+
 TEST(FormatJson, IncludesRawCountsAlongsideEquities) {
   const std::string text = formatJson(sampleReport(), sampleContext());
 

@@ -16,6 +16,27 @@ std::string asPercent(double share) { return std::format("{:.2f}%", share * 100.
 
 }  // namespace
 
+std::string escapeJsonString(std::string_view text) {
+  std::string out;
+  out.reserve(text.size());
+  for (const char c : text) {
+    switch (c) {
+      case '"': out += "\\\""; break;
+      case '\\': out += "\\\\"; break;
+      case '\n': out += "\\n"; break;
+      case '\r': out += "\\r"; break;
+      case '\t': out += "\\t"; break;
+      default:
+        if (static_cast<unsigned char>(c) < 0x20) {
+          out += std::format("\\u{:04x}", static_cast<unsigned char>(c));
+        } else {
+          out += c;
+        }
+    }
+  }
+  return out;
+}
+
 std::string formatTable(const SearchReport& report, const ReportContext& context) {
   const std::string heroName = context.hero.toString();
   const std::string villainName = context.villain.toString();

@@ -15,7 +15,11 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
   set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type" FORCE)
 endif()
 
-option(EVEN_FLOP_BUILD_TESTS "Build even-flop unit tests" ON)
+if(EMSCRIPTEN)
+  option(EVEN_FLOP_BUILD_TESTS "Build even-flop unit tests" OFF)
+else()
+  option(EVEN_FLOP_BUILD_TESTS "Build even-flop unit tests" ON)
+endif()
 
 include(FetchContent)
 
@@ -43,8 +47,10 @@ target_include_directories(even_flop_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/inc
 target_link_libraries(even_flop_core PUBLIC pheval)
 target_compile_options(even_flop_core PRIVATE -Wall -Wextra -Wpedantic)
 
-find_package(Threads REQUIRED)
-target_link_libraries(even_flop_core PUBLIC Threads::Threads)
+if(NOT EMSCRIPTEN)
+  find_package(Threads REQUIRED)
+  target_link_libraries(even_flop_core PUBLIC Threads::Threads)
+endif()
 
 # --- cli ----------------------------------------------------------------------
 # Argument parsing and formatting live in a library rather than in the
@@ -57,9 +63,29 @@ target_include_directories(even_flop_cli PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src/
 target_link_libraries(even_flop_cli PUBLIC even_flop_core)
 target_compile_options(even_flop_cli PRIVATE -Wall -Wextra -Wpedantic)
 
-add_executable(even-flop src/cli/main.cpp)
-target_link_libraries(even-flop PRIVATE even_flop_cli)
-target_compile_options(even-flop PRIVATE -Wall -Wextra -Wpedantic)
+if(NOT EMSCRIPTEN)
+  add_executable(even-flop src/cli/main.cpp)
+  target_link_libraries(even-flop PRIVATE even_flop_cli)
+  target_compile_options(even-flop PRIVATE -Wall -Wextra -Wpedantic)
+endif()
+
+# --- webassembly --------------------------------------------------------------
+# Built only under emscmake. Emits a single self-contained .js (the wasm is
+# inlined) so the page can be served from anywhere without extra MIME setup.
+if(EMSCRIPTEN)
+  add_executable(even_flop_wasm src/wasm/bindings.cpp)
+  target_link_libraries(even_flop_wasm PRIVATE even_flop_cli)
+  set_target_properties(even_flop_wasm PROPERTIES OUTPUT_NAME "even-flop-engine" SUFFIX ".js")
+  target_link_options(even_flop_wasm PRIVATE
+    -lembind
+    -O3
+    -sMODULARIZE=1
+    -sEXPORT_NAME=createEvenFlopEngine
+    -sSINGLE_FILE=1
+    -sALLOW_MEMORY_GROWTH=1
+    -sENVIRONMENT=web,worker,node
+  )
+endif()
 
 # --- tests --------------------------------------------------------------------
 if(EVEN_FLOP_BUILD_TESTS)

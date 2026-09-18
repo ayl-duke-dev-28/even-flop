@@ -89,10 +89,16 @@ std::expected<SearchReport, std::string> findEvenFlops(
     }
   };
 
-  const auto workers = static_cast<std::size_t>(resolveWorkerCount(options.threadCount));
-  const std::size_t threadCount = std::max<std::size_t>(1, std::min(workers, flops.size()));
-  const std::size_t chunkSize = (flops.size() + threadCount - 1) / threadCount;
-  {
+  const auto requested = static_cast<std::size_t>(resolveWorkerCount(options.threadCount));
+  const std::size_t threadCount = std::max<std::size_t>(1, std::min(requested, flops.size()));
+
+  if (threadCount == 1) {
+    // Run inline rather than spawning a single worker. Besides saving the
+    // thread, this is the path a WebAssembly build without pthreads takes,
+    // where std::jthread is unavailable.
+    evaluateRange(0, flops.size());
+  } else {
+    const std::size_t chunkSize = (flops.size() + threadCount - 1) / threadCount;
     std::vector<std::jthread> workers;
     workers.reserve(threadCount);
     for (std::size_t begin = 0; begin < flops.size(); begin += chunkSize) {

@@ -12,3 +12,4 @@
 build/
 compile_commands.json
 build-cov/
+build-wasm/
