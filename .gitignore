@@ -1,0 +1,9 @@
+# Local agent settings
+.claude/settings.local.json
+
+# macOS
+.DS_Store
+
+# Editor
+.vscode/
+.idea/
