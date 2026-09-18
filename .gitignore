@@ -7,3 +7,7 @@
 # Editor
 .vscode/
 .idea/
+
+# CMake build output
+build/
+compile_commands.json
