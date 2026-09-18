@@ -70,8 +70,10 @@ if(NOT EMSCRIPTEN)
 endif()
 
 # --- webassembly --------------------------------------------------------------
-# Built only under emscmake. Emits a single self-contained .js (the wasm is
-# inlined) so the page can be served from anywhere without extra MIME setup.
+# Built only under emscmake. Emits a .js loader plus a .wasm binary; web/build.sh
+# then base64s the binary into a JS file. SINGLE_FILE is deliberately NOT used:
+# it inlines the wasm as a raw binary string literal, which is corrupted by any
+# charset handling in transit and fails to compile in the browser.
 if(EMSCRIPTEN)
   add_executable(even_flop_wasm src/wasm/bindings.cpp)
   target_link_libraries(even_flop_wasm PRIVATE even_flop_cli)
@@ -81,8 +83,11 @@ if(EMSCRIPTEN)
     -O3
     -sMODULARIZE=1
     -sEXPORT_NAME=createEvenFlopEngine
-    -sSINGLE_FILE=1
     -sALLOW_MEMORY_GROWTH=1
+    # Emscripten prunes the incoming Module API to what it can prove is used;
+    # wasmBinary has to be named or the page's decoded bytes are ignored and it
+    # tries to fetch the .wasm instead.
+    -sINCOMING_MODULE_JS_API=wasmBinary
     -sENVIRONMENT=web,worker,node
   )
 endif()
