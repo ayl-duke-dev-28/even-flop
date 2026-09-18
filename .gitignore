@@ -11,3 +11,4 @@
 # CMake build output
 build/
 compile_commands.json
+build-cov/

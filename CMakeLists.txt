@@ -47,12 +47,18 @@ find_package(Threads REQUIRED)
 target_link_libraries(even_flop_core PUBLIC Threads::Threads)
 
 # --- cli ----------------------------------------------------------------------
-add_executable(even-flop
-  src/cli/main.cpp
+# Argument parsing and formatting live in a library rather than in the
+# executable so the tests can link and exercise them directly.
+add_library(even_flop_cli
   src/cli/options.cpp
   src/cli/report.cpp
 )
-target_link_libraries(even-flop PRIVATE even_flop_core)
+target_include_directories(even_flop_cli PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src/cli)
+target_link_libraries(even_flop_cli PUBLIC even_flop_core)
+target_compile_options(even_flop_cli PRIVATE -Wall -Wextra -Wpedantic)
+
+add_executable(even-flop src/cli/main.cpp)
+target_link_libraries(even-flop PRIVATE even_flop_cli)
 target_compile_options(even-flop PRIVATE -Wall -Wextra -Wpedantic)
 
 # --- tests --------------------------------------------------------------------
